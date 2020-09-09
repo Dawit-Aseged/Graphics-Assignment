@@ -3,9 +3,10 @@
 #include <GL/glut.h>
 #include <iostream>
 
-const float WINDOW_WIDTH = 800.0;
-const float WINDOW_HEIGHT = 600.0;
-const double PIXEL_WIDTH = 0.5;
+const float WINDOW_WIDTH = 1000.0;
+const float WINDOW_HEIGHT = 400.0;
+const int COLUMNS = 10;
+const float BOX_WIDTH = WINDOW_HEIGHT / COLUMNS; // The width of each pixel like box
 
 struct Point
 {
@@ -26,31 +27,31 @@ struct Point
 			return true;
 	}
 
-	bool operator < (Point p) {
-		if (X < p.X )
-			return true;
-		else
-			return false;
-	}
 	
 };
 
 struct PolygonLocation {
-	Point vertex1;
-	Point vertex2;
-	Point vertex3;
-	Point vertex4;
+	Point vertices[4];
 
+	PolygonLocation(Point p[4]) {
+		for (int i = 0; i < 4; i++)
+			vertices[i] = p[i];
+	}
 	
 };
 
-void drawPixel(Point px) {
+struct Line {
+	double slope; 
+	double intercept;
+};
+
+void drawSquare(Point px, int width) {
 	glBegin(GL_POLYGON);
 
 	glVertex2f(px.X, px.Y);
-	glVertex2f(px.X + PIXEL_WIDTH, px.Y);
-	glVertex2f(px.X + PIXEL_WIDTH, px.Y + PIXEL_WIDTH);
-	glVertex2f(px.X, px.Y + PIXEL_WIDTH);
+	glVertex2f(px.X + width, px.Y);
+	glVertex2f(px.X + width, px.Y + width);
+	glVertex2f(px.X, px.Y + width);
 
 	glEnd();
 }
@@ -64,84 +65,81 @@ void handleKeypress(unsigned char key, int x, int y)
 	}
 }
 
-void Rectangle(double bottomLeftVertexX, double bottomLeftVertexY, double topRightVertexX, double topRightVertexY)
-{
-	double x1 = bottomLeftVertexX;
-	double y1 = bottomLeftVertexY;
-	double x2 = topRightVertexX;
-	double y2 = topRightVertexY;
-
-
-	glBegin(GL_POLYGON);
-	glVertex2f(x1, y1);
-	glVertex2f(x2, y1);
-	glVertex2f(x2, y2);
-	glVertex2f(x1, y2);
-	glEnd();
+// Returns the slope made by the two point
+double getSlope(Point p1, Point p2) {
+	return ((p2.Y - p1.Y) / (p2.X - p1.X));
 }
 
-void FourSidedPolygon(double blx, double bly, double brx, double bry, double tlx, double tly, double trx, double Try)
-{
-	glBegin(GL_POLYGON);
-	glVertex2f(blx, bly);
-	glVertex2f(brx, bry);
-	glVertex2f(tlx, tly);
-	glVertex2f(trx, Try);
-	glEnd();
+// Returns a line made from two points
+Line getLine(Point p1, Point p2) {
+	double slope = getSlope(p1, p2);
+	double intercept = p1.Y - (slope * p1.X);
+	Line ln;
+	ln.intercept = intercept;
+	ln.slope = slope;
+	return ln;
 }
 
-void squiglyLine(double x, double y)
-{
-	Rectangle(0.5 + x, 1.5 + y, 2.0 + x, 7.0 + y);
-	Rectangle(2.0 + x, 7.0 + y, 7.0 + x, 5.5 + y);
-	Rectangle(5.5 + x, 3.5 + y, 7.0 + x, 7.0 + y);
-	Rectangle(2.5 + x, 3.5 + y, 5.5 + x, 5.0 + y);
-	Rectangle(2.5 + x, 1.5 + y, 4.0 + x, 4.5 + y);
-	Rectangle(2.5 + x, 3.0 + y, 9.0 + x, 1.5 + y);
-	Rectangle(7.5 + x, 3.0 + y, 9.0 + x, 7.0 + y);
-	/*
-	//For an elongated squigly line
-	Rectangle(x+0.5, 9.5-y, x+2.0, 15.0-y);
-	Rectangle(x+1.0, 13.5-y, x+8.0, 15.0-y);
-	Rectangle(x+6.5, 12.0-y, x+8.0, 15.0-y);
-	Rectangle(x+3.0, 11.5-y, x+8.0, 13.0-y);
-	Rectangle(x+2.5, 9.5-y, x+4.0, 13.0-y);
-	Rectangle(x+3.0, 9.5-y, x+10.0, 11.0-y);
-	Rectangle(x+8.5, 10.0-y, x+10.0, 15.0-y);
-	*/
+// Gets the Y-Coordinate from a line and an X-Coordinate
+double getYCoordinate(Line ln, double x) {
+	return ((ln.slope * x) + ln.intercept);
 }
 
-void inverseSquiglyLine(double x, double y)
-{
-	Rectangle(0.5 + x, 1.5 + y, 2.0 + x, 7.0 + y);
-	Rectangle(0.5 + x, 1.5 + y, 7.0 + x, 3.0 + y);
-	Rectangle(5.5 + x, 3.0 + y, 7.0 + x, 5.0 + y);
-	Rectangle(2.5 + x, 3.5 + y, 7.0 + x, 5.0 + y);
-	Rectangle(2.5 + x, 5.0 + y, 4.0 + x, 7.0 + y);
-	Rectangle(4.0 + x, 5.5 + y, 9.0 + x, 7.0 + y);
-	Rectangle(7.5 + x, 1.5 + y, 9.0 + x, 7.0 + y);
+// Calculates the distance between two points
+double getDistance(Point p1, Point p2) {
+	double height = abs(p1.Y - p2.Y);
+	double width = abs(p1.X -p2.X);
+
+	return (sqrt(pow(height, 2) + pow(width, 2)));
 }
 
-void bigSquare(Point p, int width) {
-	for (int i = 0; i < width ; i++) {
-		for (int j = 0; j < width ; j++) {
-			Point px = { p.X + (i * PIXEL_WIDTH), p.Y + (j * PIXEL_WIDTH) };
-			drawPixel(px);
-		}
-	}
-}
 
 void drawPixelatedSquare(PolygonLocation square) {
-	Point counter = square.vertex1;
+
+
+	glColor3f(0.10, 0.20, 0.11);
+	for (int i = 0; i < 4; i++) {
+		
+		Point current = square.vertices[i];
+		if (i != 3) {
+			Line ln = getLine(square.vertices[i], square.vertices[i + 1]);
+			while (getDistance(current, square.vertices[i+1]) > (BOX_WIDTH / 2))
+			{
+				int distance = getDistance(current, square.vertices[i + 1]);
+
+				drawSquare(current, BOX_WIDTH);
+				if (current.X < square.vertices[i + 1].X)
+					current.X += BOX_WIDTH / 2;
+				else
+					current.X -= BOX_WIDTH / 2;
+				current.Y = getYCoordinate(ln, current.X);
+			}
+		}
+		else {
+			Line ln = getLine(square.vertices[i], square.vertices[0]);
+			while (getDistance(current, square.vertices[0]) > BOX_WIDTH / 2)
+			{
+				drawSquare(current, BOX_WIDTH);
+				if (current.X < square.vertices[0].X)
+					current.X += BOX_WIDTH / 2;
+				else
+					current.X -= BOX_WIDTH / 2;
+				current.Y = getYCoordinate(ln, current.X);
+			}
+		}
+	}
+
+	/*
 	double jumpFactor = glutGet(GLUT_SCREEN_WIDTH) / 2;
 	while (counter < square.vertex2  ) {
 		std::cout << "X1: " << counter.X << "  X2: " << square.vertex2.X << std::endl;
 		std::cout << "Y1: " << counter.Y << "  Y2: " << square.vertex2.Y << std::endl;
 
-		bigSquare(counter, 2);
+	//	bigSquare(counter, 2);
 		counter.X += 0.5;
 		counter.Y += 0.5;
 	}
+	*/
 }
 
 void display(void) {
@@ -150,68 +148,173 @@ void display(void) {
 	glColor3f(0.25, 0.44, 0.57);
 
 
-	//Rectangle(6.0, 4.5, 7.5, 1.5);
-	double width = glutGet(GLUT_SCREEN_WIDTH);
-	double height = glutGet(GLUT_SCREEN_HEIGHT);
-
-	Point vertex1 = { width * 0.25, height * 0.5 };
-	Point vertex2 = { width * 0.5, height * 0.75 };
-	Point vertex3 = { width * 0.75, height * 0.5 };
-	Point vertex4 = { width * 0.5, height * 0.25 };
-
-//	drawPixelatedSquare({ vertex1, vertex2, vertex3, vertex4 });
 	
-	//bigSquare(10, 10, 15);
+	// The center point isn't exactly on the center. 
+	// The X-axis is centerd 
+	// The y-axis is down by half the box size to ensure that the region touches the ceiling 
+
+
+	// Center big one
+	Point center = { WINDOW_WIDTH / 2, (WINDOW_HEIGHT / 2 - (BOX_WIDTH / 2)) };
+	double radius = WINDOW_HEIGHT * 0.45;
+	Point centerSquare []= {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(centerSquare);
+
+
+	// Smaller Center
+
+	radius = WINDOW_HEIGHT * 0.15;
+	Point tinySquare[] = {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(tinySquare);
+
+
+
+	// Bottom Left
+	center = { WINDOW_WIDTH / 5, -(WINDOW_HEIGHT / 8) };
+	radius = WINDOW_HEIGHT * 0.45;
+	Point bottomLeft[] = {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(bottomLeft);
+
+	// Bottom Left Tiny
+
+	radius = WINDOW_HEIGHT * 0.15;
+	Point bottomLeftTiny[] = {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(bottomLeftTiny);
+
+
+	// Top Left
+
+	center = { WINDOW_WIDTH / 5, (WINDOW_HEIGHT) };
+	radius = WINDOW_HEIGHT * 0.45;
+	Point topLeft[] = {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(topLeft);
+
+	// Top Left Tiny
+
+	radius = WINDOW_HEIGHT * 0.15;
+	Point topLeftTiny[] = {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(topLeftTiny);
+
+
+	// Top Right
+
+	center = { WINDOW_WIDTH * 0.8, (WINDOW_HEIGHT) };
+	radius = WINDOW_HEIGHT * 0.45;
+	Point topRight[] = {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(topRight);
+
+	// Top Right Tiny
+
+	radius = WINDOW_HEIGHT * 0.15;
+	Point topRightTiny[] = {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(topRightTiny);
+
+
+
+	// Bottom Right
+	center = { WINDOW_WIDTH * 0.8, -(WINDOW_HEIGHT / 8) };
+	radius = WINDOW_HEIGHT * 0.45;
+	Point bottomRight[] = {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(bottomRight);
+
+	// Bottom Right Tiny
+
+	radius = WINDOW_HEIGHT * 0.15;
+	Point bottomRightTiny[] = {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(bottomRightTiny);
+
+
+	// Center Left
+	center = { -(WINDOW_WIDTH / 8) , (WINDOW_HEIGHT / 2 - (BOX_WIDTH / 2)) };
+	radius = WINDOW_HEIGHT * 0.45;
+	Point centerLeft[] = {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(centerLeft);
+
 	
-	double bigPixelWidth = 2;
-	int count = 0;
-	while((count * bigPixelWidth - 20) <= width) {
-		
-		for (int j = 0; j < height / 100; j++) {
-			Point px = { count * bigPixelWidth, j * bigPixelWidth };
-			if (count % 2 == j % 2) {
-				glColor3f(0.25, 0.44, 0.57);
-				bigSquare(px, bigPixelWidth * 2);
+	// Center Right
+	center = { (WINDOW_WIDTH * 1.125) , (WINDOW_HEIGHT / 2 - (BOX_WIDTH / 2)) };
+	radius = WINDOW_HEIGHT * 0.45;
+	Point centerRight[] = {
+		{ center.X - radius		, center.Y },
+		{ center.X				, center.Y - radius },
+		{ center.X + radius		, center.Y },
+		{ center.X				, center.Y + radius }
+	};
+	drawPixelatedSquare(centerRight);
+	
+	/*
+	
+	-> Grid Sample <-
+
+	int columns = 20;
+	double squareWidth = WINDOW_WIDTH / columns;
+
+	int rows = WINDOW_HEIGHT / squareWidth;
+	for (int i = 0; i < columns; i++) {
+		for (int j = 0; j < rows; j++){
+			if (i % 2 == j % 2) {
+				Point pt = { (i * squareWidth), (j * squareWidth) };
+				drawSquare(pt, squareWidth);
 			}
-			else {
-				glColor3f(0.99, 0.44, 0.66);
-				bigSquare(px, bigPixelWidth * 2);
-			}
-				
-				//drawPixel(px);
 		}
-		count++;
-		
+
 	}
-	std::cout << "Count:- " << count << std::endl;
-	/*
-
-	glBegin(GL_TRIANGLES);
-
-	glVertex2f(0.0f, 600.0f);
-	glVertex2f(800.0f, 600.0f);
-	glVertex2f(400.0f, 0.0f);
-	
-	glEnd();
 	*/
-	/*
-	squiyLine(0, 6);
-	squiglyLine(7, 6);
-	squiglyLine(14, 6);
-	squiglyLine(21, 6);
-	Rectangle(0.5, 7.0, 2.0, 8.5);//Spacer between first squigly lines
-	inverseSquiglyLine(0, 0);
-	inverseSquiglyLine(7, 0);
-	inverseSquiglyLine(14, 0);
-	inverseSquiglyLine(21, 0);
-	*/
-	//squiglyLine(0,6.5);
-	//squiglyLine(8,0);
-	//squiglyLine(8,6.5);
-	//squiglyLine(16,0);
-	//squiglyLine(16, 6.5);
-
-
 
 
 	glFlush();
@@ -219,7 +322,7 @@ void display(void) {
 
 void reshape(int width, int height)
 {
-	glViewport(0, 0, 800, 400);
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 	
 }
 int main(int argc, char** argv) {
@@ -235,8 +338,8 @@ int main(int argc, char** argv) {
 	glLoadIdentity();
 	//glOrtho(0.0,10.0,0.0,10.0,-1.0,1.0);
 	//glutReshapeFunc(reshape);
-	glOrtho(0.0, 30.0, 0.0, 20.0, -1.0, 1.0);
-	//glOrtho(0.0, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0, -1.0, 1.0);
+	//glOrtho(0.0, 30.0, 0.0, 20.0, -1.0, 1.0);
+	glOrtho(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT, -1.0, 1.0);
 	//glOrtho(0.0f, glutGet(GLUT_SCREEN_WIDTH), glutGet(GLUT_SCREEN_HEIGHT), 0.0f, 0.0f, 1.0f);
 	glutDisplayFunc(display);
 	glutMainLoop();
