@@ -75,37 +75,6 @@ void drawRectangle(Point bottomLeft, Point topRight, float width) {
 	
 }
 
-void drawSqugle(Point pt, float width) {
-	Point barV1 = { pt.X, pt.Y };
-	Point barV2 = { pt.X + width, pt.Y + THICKNESS };
-	float height = width;
-	drawBar(barV1, barV2);
-	
-	barV1 = barV2 - THICKNESS;
-	barV2 = { barV2.X, barV2.Y - THICKNESS + height };
-	
-	drawBar(barV1, barV2);
-
-	barV1 = { barV1.X, barV2.Y - THICKNESS };
-	barV2 = { barV2.X - THICKNESS + width, barV2.Y };
-
-	drawBar(barV1, barV2);
-
-	barV1 = { barV2.X - THICKNESS, barV2.Y - (width / 2) };
-
-	drawBar(barV1, barV2);
-
-	barV2 = barV1 + THICKNESS;
-	barV1 = { barV1.X + THICKNESS - ((width - THICKNESS) * 0.8), barV1.Y };
-
-	drawBar(barV1, barV2);
-
-	barV2 = barV1 + THICKNESS;
-	barV1 = { barV1.X, barV1.Y - (height / 2) };
-
-	drawBar(barV1, barV2);
-	
-}
 void handleKeypress(unsigned char key, int x, int y)
 {
 	switch (key)
