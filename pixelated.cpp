@@ -3,8 +3,9 @@
 #include <GL/glut.h>
 #include <iostream>
 
-const float WINDOW_WIDTH = 800.0;
-const float WINDOW_HEIGHT = 600.0;
+const float THICKNESS = 15;
+const float WINDOW_WIDTH = 1200.0;
+const float WINDOW_HEIGHT = THICKNESS * 38;
 
 struct Point
 {
@@ -74,32 +75,32 @@ void drawRectangle(Point bottomLeft, Point topRight, float width) {
 	
 }
 
-void drawSqugle(Point pt, float width, float thickness) {
+void drawSqugle(Point pt, float width) {
 	Point barV1 = { pt.X, pt.Y };
-	Point barV2 = { pt.X + width, pt.Y + thickness };
+	Point barV2 = { pt.X + width, pt.Y + THICKNESS };
 	float height = width;
 	drawBar(barV1, barV2);
-
-	barV1 = barV2 - thickness;
-	barV2 = { barV2.X, barV2.Y - thickness + height };
+	
+	barV1 = barV2 - THICKNESS;
+	barV2 = { barV2.X, barV2.Y - THICKNESS + height };
 	
 	drawBar(barV1, barV2);
 
-	barV1 = { barV1.X, barV2.Y - thickness };
-	barV2 = { barV2.X - thickness + width, barV2.Y };
+	barV1 = { barV1.X, barV2.Y - THICKNESS };
+	barV2 = { barV2.X - THICKNESS + width, barV2.Y };
 
 	drawBar(barV1, barV2);
 
-	barV1 = { barV2.X - thickness, barV2.Y - (width / 2) };
+	barV1 = { barV2.X - THICKNESS, barV2.Y - (width / 2) };
 
 	drawBar(barV1, barV2);
 
-	barV2 = barV1 + thickness;
-	barV1 = { barV1.X + thickness - ((width - thickness) * 0.8), barV1.Y };
+	barV2 = barV1 + THICKNESS;
+	barV1 = { barV1.X + THICKNESS - ((width - THICKNESS) * 0.8), barV1.Y };
 
 	drawBar(barV1, barV2);
 
-	barV2 = barV1 + thickness;
+	barV2 = barV1 + THICKNESS;
 	barV1 = { barV1.X, barV1.Y - (height / 2) };
 
 	drawBar(barV1, barV2);
@@ -114,30 +115,71 @@ void handleKeypress(unsigned char key, int x, int y)
 	}
 }
 
+void drawDownRight(Point pt) {
+	Point barV1 = { pt.X, pt.Y };
+	Point barV2 = { pt.X + THICKNESS, pt.Y + (THICKNESS * 3) };
+	drawBar(barV1, barV2);
+
+	barV2 = { pt.X + (THICKNESS * 4), pt.Y + THICKNESS };
+	drawBar(barV1, barV2);
+}
+
+void drawRightDown(Point pt) {
+	Point barV1 = { pt.X, pt.Y };
+	Point barV2 = { pt.X + (THICKNESS * 4), pt.Y + THICKNESS };
+	drawBar(barV1, barV2);
+
+	barV1 = { barV2.X - THICKNESS, barV2.Y - (THICKNESS * 3) };
+	drawBar(barV1, barV2);
+}
 void display(void) {
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
 
 	glColor3f(0.29, 0.25, 0.25);
-	int thickness = 10;
+	
 	Point bottomLeftBorder = { 0 ,0 };
-	Point topRightBorder = { WINDOW_WIDTH, WINDOW_HEIGHT};
-	drawRectangle(bottomLeftBorder, topRightBorder, thickness);
+	Point topRightBorder = { WINDOW_WIDTH, WINDOW_HEIGHT };
+	drawRectangle(bottomLeftBorder, topRightBorder, THICKNESS);
 
 	glColor3f(0.94, 0.91, 0.87);
-	Point bottomLeftInnerBorder = { WINDOW_WIDTH * 0.05 - thickness / 2, WINDOW_HEIGHT * 0.05 - thickness / 2 };
+	Point bottomLeftInnerBorder = bottomLeftBorder + (THICKNESS * 3);
 	Point topRightInnerBorder = { WINDOW_WIDTH - bottomLeftInnerBorder.X, WINDOW_HEIGHT - bottomLeftInnerBorder.Y };
-	drawRectangle(bottomLeftInnerBorder, topRightInnerBorder, thickness);
+	drawRectangle(bottomLeftInnerBorder, topRightInnerBorder, THICKNESS);
 
-	Point inner = bottomLeftInnerBorder + thickness + thickness / 2;
-	float innerDifference = (topRightInnerBorder - (thickness * 1.5)).X - (bottomLeftInnerBorder + (thickness * 1.5)).X;
-	float squigleWidth = innerDifference / 10; 
+	Point innerBottom = bottomLeftInnerBorder + THICKNESS + THICKNESS / 2;
+	Point innerTop = { WINDOW_WIDTH - innerBottom.X, WINDOW_HEIGHT - innerBottom.Y };
+	
+	int innerThick = 5 * THICKNESS;
+	drawRectangle(innerBottom, innerTop, innerThick);
 
-	drawSqugle(inner, squigleWidth, thickness);
+	// Primary L shape on the bottom left corner
+	glColor3f(0.18, 0.15, 0.14);
+	Point barV1 = innerBottom + THICKNESS;
+	Point barV2 = { barV1.X + THICKNESS, barV1.Y + innerThick };
+	drawBar(barV1, barV2);
+
+	barV2 = { barV1.X + (THICKNESS * 3), barV1.Y + THICKNESS };
+	drawBar(barV1, barV2);
+
+	// Making the first T shape bottom left corner
+
+	barV1 = { barV2.X + THICKNESS, innerBottom.Y };
+	barV2 = { barV1.X + THICKNESS, barV1.Y + (THICKNESS * 4) };
+	drawBar(barV1, barV2);
+	
+	barV1 = { innerBottom.X + (THICKNESS * 3), innerBottom.Y + (THICKNESS * 3) };
+	barV2 = { barV2.X + (THICKNESS * 2), barV2.Y };
+	drawBar(barV1, barV2);
+	
+	for (int i = 0; i < 4; i++)
+		drawDownRight({ innerBottom.X + THICKNESS, innerBottom.Y + (THICKNESS * ((6 * i) + 5)) });
+
+	for (int i = 0; i < 3; i++)
+		drawRightDown({ innerBottom.X, innerBottom.Y + (THICKNESS * ((6 * i) + 9)) });
 	glFlush();
 }
-
 
 
 void reshape(int width, int height)
