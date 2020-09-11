@@ -3,8 +3,8 @@
 #include <GL/glut.h>
 #include <iostream>
 
-const float THICKNESS = 15;
-const float WINDOW_WIDTH = 1200.0;
+const float THICKNESS = 20;
+const float WINDOW_WIDTH = THICKNESS * 68;
 const float WINDOW_HEIGHT = THICKNESS * 38;
 
 struct Point
@@ -94,12 +94,38 @@ void drawDownRight(Point pt) {
 }
 
 void drawRightDown(Point pt) {
+
+	
 	Point barV1 = { pt.X, pt.Y };
 	Point barV2 = { pt.X + (THICKNESS * 4), pt.Y + THICKNESS };
 	drawBar(barV1, barV2);
 
 	barV1 = { barV2.X - THICKNESS, barV2.Y - (THICKNESS * 3) };
 	drawBar(barV1, barV2);
+}
+
+void drawUpRight(Point pt) {
+	
+	Point barV1 = { pt.X, pt.Y };
+	Point barV2 = { pt.X + THICKNESS, barV1.Y + (THICKNESS * 4) };
+	drawBar(barV1, barV2);
+
+	barV1 = barV2 - THICKNESS;
+	barV2 = { barV2.X + (THICKNESS * 2), barV2.Y };
+	drawBar(barV1, barV2);
+
+}
+
+void drawRightUp(Point pt) {
+	Point barV1 = { pt.X, pt.Y };
+	Point barV2 = { pt.X + (THICKNESS * 3), pt.Y + THICKNESS };
+	drawBar(barV1, barV2);
+	
+	barV1 = barV2 - THICKNESS;
+	barV2 = { barV2.X, barV2.Y + (THICKNESS * 3) };
+	drawBar(barV1, barV2);
+
+
 }
 void display(void) {
 
@@ -132,21 +158,59 @@ void display(void) {
 	barV2 = { barV1.X + (THICKNESS * 3), barV1.Y + THICKNESS };
 	drawBar(barV1, barV2);
 
-	// Making the first T shape bottom left corner
-
-	barV1 = { barV2.X + THICKNESS, innerBottom.Y };
-	barV2 = { barV1.X + THICKNESS, barV1.Y + (THICKNESS * 4) };
+	// Making the missing part of T on the bottom left
+	
+	barV1 = innerBottom + (THICKNESS * 3);
+	barV2 = { barV1.X + (THICKNESS * 2), barV1.Y + THICKNESS };
 	drawBar(barV1, barV2);
 	
-	barV1 = { innerBottom.X + (THICKNESS * 3), innerBottom.Y + (THICKNESS * 3) };
-	barV2 = { barV2.X + (THICKNESS * 2), barV2.Y };
-	drawBar(barV1, barV2);
-	
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++) {
+		/*
+		This loop draws the following figures on the right side
+			1. _____		2.	|
+				    |			|________
+		*/
 		drawDownRight({ innerBottom.X + THICKNESS, innerBottom.Y + (THICKNESS * ((6 * i) + 5)) });
+		if(i != 3)
+			drawRightDown({ innerBottom.X, innerBottom.Y + (THICKNESS * ((6 * i) + 9)) });
+	}
+	for (int i = 0; i < 9; i++) {
+		/*
+		This loop draws the following figures on the top side
+			1.	 _____			2.		
+				|						|
+				|						|
+				|				   _____|	
+		*/
+		drawUpRight({ innerBottom.X + (THICKNESS * ((6 * i) + 1)), innerTop.Y - (THICKNESS * 5) });
+		drawRightUp({ innerBottom.X + (THICKNESS * ((6 * i) + 3)), innerTop.Y - (THICKNESS * 4) });
+	}
+	
+	// Makes the missing part of T - Top Right
+	barV1 = { innerTop.X - (THICKNESS * 5), innerTop.Y - (THICKNESS * 4) };
+	barV2 = { barV1.X + (THICKNESS * 2), barV1.Y + THICKNESS };
+	drawBar(barV1, barV2);
 
-	for (int i = 0; i < 3; i++)
-		drawRightDown({ innerBottom.X, innerBottom.Y + (THICKNESS * ((6 * i) + 9)) });
+
+	// Making the weird L shape on the top right corner
+	barV1 = { innerTop.X - (THICKNESS * 4), innerTop.Y - (THICKNESS * 2) };
+	barV2 = innerTop - THICKNESS;
+	drawBar(barV1, barV2);
+	
+	barV1 = { barV2.X - THICKNESS, barV2.Y - (THICKNESS * 4) };
+	drawBar(barV1, barV2);
+	
+	for (int i = 0; i < 4; i++) {
+		// This loop draws the left side of the mat
+		drawRightDown({ innerTop.X - (THICKNESS * 5), innerTop.Y - (THICKNESS * ((6 * i) + 6)) });
+		if (i != 3)
+			drawDownRight({ innerTop.X - (THICKNESS * 4), innerTop.Y - (THICKNESS * ((6 * i) + 10)) });
+	}
+
+	for (int i = 0; i < 9; i++) {
+		drawRightUp({ innerBottom.X + (THICKNESS * ((6 * i) + 7)), innerBottom.Y + THICKNESS });
+		drawUpRight({ innerBottom.X + (THICKNESS * ((6 * i) + 5)), innerBottom.Y });
+	}
 	glFlush();
 }
 
