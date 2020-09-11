@@ -3,9 +3,16 @@
 #include <GL/glut.h>
 #include <iostream>
 
-const float THICKNESS = 20;
-const float WINDOW_WIDTH = THICKNESS * 68;
-const float WINDOW_HEIGHT = THICKNESS * 38;
+//const float THICKNESS = 15;
+const float PI = 3.141592653979;
+const float UNADJUSTED_RADIUS = 200;
+const float SMALL_RADIUS = (UNADJUSTED_RADIUS / 18); // Since there are 9 rings 
+const float SMALL_DIAMETER = SMALL_RADIUS * 2;
+const float GAP = SMALL_RADIUS / 3;
+const float MAIN_RADIUS = (SMALL_DIAMETER * 8) + (GAP * 8) + SMALL_RADIUS;// 8 rings + 8 gaps + radius of the center
+const float WINDOW_WIDTH = (MAIN_RADIUS * 2) + (SMALL_RADIUS / 2);
+const float WINDOW_HEIGHT = WINDOW_WIDTH;
+
 
 struct Point
 {
@@ -39,41 +46,27 @@ struct Point
 
 };
 
-void drawBar(Point bottomLeft, Point topRight) {
-	glBegin(GL_POLYGON);
+struct Circle {
+	double radius; 
+	Point center;
 
-	glVertex2d(bottomLeft.X, bottomLeft.Y);
-	glVertex2d(bottomLeft.X + (topRight.X - bottomLeft.X), bottomLeft.Y);
-	glVertex2d(bottomLeft.X + (topRight.X - bottomLeft.X), topRight.Y);
-	glVertex2d(bottomLeft.X, topRight.Y);
-
-	glEnd();
-}
-
-void drawRectangle(Point bottomLeft, Point topRight, float width) {
-
-	Point barV1 = { bottomLeft.X, bottomLeft.Y };
-	Point barV2 = { bottomLeft.X + width, topRight.Y };
-
-	drawBar(barV1, barV2);
-
-	barV1 = { bottomLeft.X, topRight.Y - width };
-	barV2 = { topRight.X, topRight.Y };
-
-	drawBar(barV1, barV2);
-
-	barV1 = { topRight.X - width, topRight.Y };
-	barV2 = { topRight.X, bottomLeft.Y };
-
-	drawBar(barV1, barV2);
-
-	barV1 = { bottomLeft.X, bottomLeft.Y };
-	barV2 = { topRight.X, bottomLeft.Y + width };
-
-	drawBar(barV1, barV2);
-
+	float getCircumference() {
+		return PI * (radius * 2);
+	}
 	
-}
+};
+
+struct Color {
+	float R;
+	float G; 
+	float B;
+
+};
+
+
+Circle Rings[7];
+Color RingColor[7];
+const Point CENTER = { WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 };
 
 void handleKeypress(unsigned char key, int x, int y)
 {
@@ -83,144 +76,97 @@ void handleKeypress(unsigned char key, int x, int y)
 		exit(0);
 	}
 }
-
-void drawDownRight(Point pt) {
-	Point barV1 = { pt.X, pt.Y };
-	Point barV2 = { pt.X + THICKNESS, pt.Y + (THICKNESS * 3) };
-	drawBar(barV1, barV2);
-
-	barV2 = { pt.X + (THICKNESS * 4), pt.Y + THICKNESS };
-	drawBar(barV1, barV2);
+float getRadian(float degree) {
+	// Converts degree to radian
+	return (degree * 3.141592653979) / 180;
 }
 
-void drawRightDown(Point pt) {
-
-	
-	Point barV1 = { pt.X, pt.Y };
-	Point barV2 = { pt.X + (THICKNESS * 4), pt.Y + THICKNESS };
-	drawBar(barV1, barV2);
-
-	barV1 = { barV2.X - THICKNESS, barV2.Y - (THICKNESS * 3) };
-	drawBar(barV1, barV2);
+void drawCircle(Point center, float radius) {
+	// The following code makes a circle by creating 360 vertexes, whose locations are calculated by an angle,
+	// radius of the circle and the center of the circle
+	float theta;
+	glBegin(GL_POLYGON);
+	for (int i = 0; i < 360; i++) {
+		theta = getRadian(i);
+		glVertex2f((radius * cos(theta)) + center.X, (radius * sin(theta) + center.Y));
+	}
+	glEnd();
 }
 
-void drawUpRight(Point pt) {
-	
-	Point barV1 = { pt.X, pt.Y };
-	Point barV2 = { pt.X + THICKNESS, barV1.Y + (THICKNESS * 4) };
-	drawBar(barV1, barV2);
-
-	barV1 = barV2 - THICKNESS;
-	barV2 = { barV2.X + (THICKNESS * 2), barV2.Y };
-	drawBar(barV1, barV2);
-
+void setColors() {
+	// The following is a list of colors from the innermost outwards
+	RingColor[0] = { 0.90, 0.73, 0.25 };
+	RingColor[1] = { 0.64, 0.12, 0.13 };
+	RingColor[2] = { 0.60, 0.30, 0.35 };
+	RingColor[3] = { 0.29, 0.08, 0.47 };
+	RingColor[4] = { 0.20, 0.29, 0.51 };
+	RingColor[5] = { 0.33, 0.51, 0.32 };
+	RingColor[6] = { 0.44, 0.64, 0.45 };
+}
+void setRings() {
+	// The following initialzes each ring's radius and center;
+	for (int i = 0; i < 7; i++) {
+		Rings[i].center = CENTER;
+		Rings[i].radius = (i + 1) * (SMALL_DIAMETER + GAP);
+	}
+	setColors();
 }
 
-void drawRightUp(Point pt) {
-	Point barV1 = { pt.X, pt.Y };
-	Point barV2 = { pt.X + (THICKNESS * 3), pt.Y + THICKNESS };
-	drawBar(barV1, barV2);
-	
-	barV1 = barV2 - THICKNESS;
-	barV2 = { barV2.X, barV2.Y + (THICKNESS * 3) };
-	drawBar(barV1, barV2);
-
-
+int getNumberOfCirclesPerRing(Circle c) {
+	// The circumference divided by the diameter and the gaps tells us how many others circles would fit
+	int number = (c.getCircumference() / (SMALL_DIAMETER + GAP));
+	return number > 1 ? number : 1;
 }
+
+void drawCirclesOnRing(Circle ring) {
+	// Gets the number of circles per ring
+	int number = getNumberOfCirclesPerRing(ring);
+
+	for (int i = 1; i <= number; i++) {
+		// For each circle on the ring the following two lines calculate the angle of position
+		float multiplicationFactor = (float)i / (float)number;
+		float theta = getRadian((360 * multiplicationFactor));
+
+		// The following Point is the center of the each circle on the ring calculated from the ring radius
+		Point miniCenter = {
+			(ring.radius * cos(theta)) + ring.center.X,
+			(ring.radius * sin(theta)) + ring.center.Y
+		};
+		drawCircle(miniCenter, SMALL_RADIUS);
+	}
+}
+
 void display(void) {
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
 
-	glColor3f(0.29, 0.25, 0.25);
+	// Draws the main circle
+	glColor3f(0.07, 0.07, 0.07);
+	drawCircle(CENTER, MAIN_RADIUS);
 	
-	Point bottomLeftBorder = { 0 ,0 };
-	Point topRightBorder = { WINDOW_WIDTH, WINDOW_HEIGHT };
-	drawRectangle(bottomLeftBorder, topRightBorder, THICKNESS);
-
-	glColor3f(0.94, 0.91, 0.87);
-	Point bottomLeftInnerBorder = bottomLeftBorder + (THICKNESS * 3);
-	Point topRightInnerBorder = { WINDOW_WIDTH - bottomLeftInnerBorder.X, WINDOW_HEIGHT - bottomLeftInnerBorder.Y };
-	drawRectangle(bottomLeftInnerBorder, topRightInnerBorder, THICKNESS);
-
-	Point innerBottom = bottomLeftInnerBorder + THICKNESS + THICKNESS / 2;
-	Point innerTop = { WINDOW_WIDTH - innerBottom.X, WINDOW_HEIGHT - innerBottom.Y };
+	// Draws the inner most circle
+	glColor3f(0.92, 0.79, 0.34);
+	drawCircle(CENTER, SMALL_RADIUS);
 	
-	int innerThick = 5 * THICKNESS;
-	drawRectangle(innerBottom, innerTop, innerThick);
-
-	// Primary L shape on the bottom left corner
-	glColor3f(0.18, 0.15, 0.14);
-	Point barV1 = innerBottom + THICKNESS;
-	Point barV2 = { barV1.X + THICKNESS, barV1.Y + innerThick };
-	drawBar(barV1, barV2);
-
-	barV2 = { barV1.X + (THICKNESS * 3), barV1.Y + THICKNESS };
-	drawBar(barV1, barV2);
-
-	// Making the missing part of T on the bottom left
-	
-	barV1 = innerBottom + (THICKNESS * 3);
-	barV2 = { barV1.X + (THICKNESS * 2), barV1.Y + THICKNESS };
-	drawBar(barV1, barV2);
-	
-	for (int i = 0; i < 4; i++) {
-		/*
-		This loop draws the following figures on the right side
-			1. _____		2.	|
-				    |			|________
-		*/
-		drawDownRight({ innerBottom.X + THICKNESS, innerBottom.Y + (THICKNESS * ((6 * i) + 5)) });
-		if(i != 3)
-			drawRightDown({ innerBottom.X, innerBottom.Y + (THICKNESS * ((6 * i) + 9)) });
+	// Draws the rest of the circle
+	for (int i = 0; i < 7; i++) {
+		glColor3f(RingColor[i].R, RingColor[i].G, RingColor[i].B);
+		drawCirclesOnRing(Rings[i]);
 	}
-	for (int i = 0; i < 9; i++) {
-		/*
-		This loop draws the following figures on the top side
-			1.	 _____			2.		
-				|						|
-				|						|
-				|				   _____|	
-		*/
-		drawUpRight({ innerBottom.X + (THICKNESS * ((6 * i) + 1)), innerTop.Y - (THICKNESS * 5) });
-		drawRightUp({ innerBottom.X + (THICKNESS * ((6 * i) + 3)), innerTop.Y - (THICKNESS * 4) });
-	}
-	
-	// Makes the missing part of T - Top Right
-	barV1 = { innerTop.X - (THICKNESS * 5), innerTop.Y - (THICKNESS * 4) };
-	barV2 = { barV1.X + (THICKNESS * 2), barV1.Y + THICKNESS };
-	drawBar(barV1, barV2);
-
-
-	// Making the weird L shape on the top right corner
-	barV1 = { innerTop.X - (THICKNESS * 4), innerTop.Y - (THICKNESS * 2) };
-	barV2 = innerTop - THICKNESS;
-	drawBar(barV1, barV2);
-	
-	barV1 = { barV2.X - THICKNESS, barV2.Y - (THICKNESS * 4) };
-	drawBar(barV1, barV2);
-	
-	for (int i = 0; i < 4; i++) {
-		// This loop draws the left side of the mat
-		drawRightDown({ innerTop.X - (THICKNESS * 5), innerTop.Y - (THICKNESS * ((6 * i) + 6)) });
-		if (i != 3)
-			drawDownRight({ innerTop.X - (THICKNESS * 4), innerTop.Y - (THICKNESS * ((6 * i) + 10)) });
-	}
-
-	for (int i = 0; i < 9; i++) {
-		drawRightUp({ innerBottom.X + (THICKNESS * ((6 * i) + 7)), innerBottom.Y + THICKNESS });
-		drawUpRight({ innerBottom.X + (THICKNESS * ((6 * i) + 5)), innerBottom.Y });
-	}
+		
 	glFlush();
 }
 
 
 void reshape(int width, int height)
 {
-	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	glViewport((width - WINDOW_WIDTH) / 2, (height - WINDOW_HEIGHT) / 2, WINDOW_WIDTH, WINDOW_HEIGHT);
 	
 }
 int main(int argc, char** argv) {
+	setRings();
+	
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowPosition(100, 100);
@@ -228,11 +174,11 @@ int main(int argc, char** argv) {
 	glutCreateWindow("Carpet");
 	//glutFullScreen();
 	glutKeyboardFunc(handleKeypress);
-	glClearColor(0.18, 0.15, 0.14, 0.0);
+	glClearColor(0.94, 0.91, 0.87, 0);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	//glOrtho(0.0,10.0,0.0,10.0,-1.0,1.0);
-	//glutReshapeFunc(reshape);
+	glutReshapeFunc(reshape);
 	//glOrtho(0.0, 30.0, 0.0, 20.0, -1.0, 1.0);
 	glOrtho(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT, -1.0, 1.0);
 	//glOrtho(0.0f, glutGet(GLUT_SCREEN_WIDTH), glutGet(GLUT_SCREEN_HEIGHT), 0.0f, 0.0f, 1.0f);
