@@ -1,16 +1,39 @@
-#include <stdlib.h>
+#include <Windows.h>
+#include<stdio.h>
+#include<iostream>
+#include <gl/glut.h>
 #include <math.h>
-#include <GL/glut.h>
-#include <iostream>
+
+#define KEY_ESC 27 /* GLUT doesn't supply this */
+
+using namespace std;
+
+int fullscreen = 0;
+int mouseDown = 0;
+
+float xrot = 100.0f;
+float yrot = -100.0f;
+
+float xdiff = 100.0f;
+float ydiff = 100.0f;
+
+float tra_x = 0.0f;
+float tra_y = 0.0f;
+float tra_z = 0.0f;
+
+
+float grow_shrink = 70.0f;
+float resize_f = 1.0f;
 
 //const float THICKNESS = 15;
 const float PI = 3.141592653979;
-const float UNADJUSTED_RADIUS = 200;
-const float SMALL_RADIUS = (UNADJUSTED_RADIUS / 18); // Since there are 9 rings 
+//const float UNADJUSTED_RADIUS = 200;
+const float MAIN_RADIUS = 1;// 8 rings + 8 gaps + radius of the center
+const float SMALL_RADIUS = (MAIN_RADIUS / 20); // Since there are 9 rings 
 const float SMALL_DIAMETER = SMALL_RADIUS * 2;
 const float GAP = SMALL_RADIUS / 3;
-const float MAIN_RADIUS = (SMALL_DIAMETER * 8) + (GAP * 8) + SMALL_RADIUS;// 8 rings + 8 gaps + radius of the center
-const float WINDOW_WIDTH = (MAIN_RADIUS * 2) + (SMALL_RADIUS / 2);
+
+const float WINDOW_WIDTH = 500;
 const float WINDOW_HEIGHT = WINDOW_WIDTH;
 
 
@@ -47,18 +70,18 @@ struct Point
 };
 
 struct Circle {
-	double radius; 
+	double radius;
 	Point center;
 
 	float getCircumference() {
 		return PI * (radius * 2);
 	}
-	
+
 };
 
 struct Color {
 	float R;
-	float G; 
+	float G;
 	float B;
 
 };
@@ -66,7 +89,7 @@ struct Color {
 
 Circle Rings[7];
 Color RingColor[7];
-const Point CENTER = { WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 };
+const Point CENTER = { 0.0, 0.0 };
 
 void handleKeypress(unsigned char key, int x, int y)
 {
@@ -81,14 +104,15 @@ float getRadian(float degree) {
 	return (degree * 3.141592653979) / 180;
 }
 
-void drawCircle(Point center, float radius) {
+void drawCircle(Point center, float radius, float z = 0) {
 	// The following code makes a circle by creating 360 vertexes, whose locations are calculated by an angle,
 	// radius of the circle and the center of the circle
 	float theta;
 	glBegin(GL_POLYGON);
 	for (int i = 0; i < 360; i++) {
 		theta = getRadian(i);
-		glVertex2f((radius * cos(theta)) + center.X, (radius * sin(theta) + center.Y));
+
+		glVertex3f((radius * cos(theta)) + center.X, (radius * sin(theta) + center.Y), z);
 	}
 	glEnd();
 }
@@ -108,6 +132,7 @@ void setRings() {
 	for (int i = 0; i < 7; i++) {
 		Rings[i].center = CENTER;
 		Rings[i].radius = (i + 1) * (SMALL_DIAMETER + GAP);
+
 	}
 	setColors();
 }
@@ -132,60 +157,239 @@ void drawCirclesOnRing(Circle ring) {
 			(ring.radius * cos(theta)) + ring.center.X,
 			(ring.radius * sin(theta)) + ring.center.Y
 		};
-		drawCircle(miniCenter, SMALL_RADIUS);
+		drawCircle(miniCenter, SMALL_RADIUS, 0.01);
 	}
 }
 
-void display(void) {
 
-	glClear(GL_COLOR_BUFFER_BIT);
+
+
+
+
+void drawBox()
+{
+
+
+	glTranslatef(tra_x, tra_y, tra_z);
 
 
 	// Draws the main circle
 	glColor3f(0.07, 0.07, 0.07);
 	drawCircle(CENTER, MAIN_RADIUS);
-	
+
 	// Draws the inner most circle
 	glColor3f(0.92, 0.79, 0.34);
-	drawCircle(CENTER, SMALL_RADIUS);
-	
+	drawCircle(CENTER, SMALL_RADIUS, 0.01);
+
+	drawCircle(CENTER, SMALL_RADIUS, 0.01);
+
 	// Draws the rest of the circle
 	for (int i = 0; i < 7; i++) {
 		glColor3f(RingColor[i].R, RingColor[i].G, RingColor[i].B);
 		drawCirclesOnRing(Rings[i]);
 	}
-		
+
 	glFlush();
 }
 
-
-void reshape(int width, int height)
+int init(void)
 {
-	glViewport((width - WINDOW_WIDTH) / 2, (height - WINDOW_HEIGHT) / 2, WINDOW_WIDTH, WINDOW_HEIGHT);
-	
+	glClearColor(0.93f, 0.93f, 0.93f, 0.0f);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glClearDepth(1.0f);
+
+	return 1;
 }
-int main(int argc, char** argv) {
-	setRings();
-	
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
-	glutInitWindowPosition(100, 100);
-	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-	glutCreateWindow("Carpet");
-	//glutFullScreen();
-	glutKeyboardFunc(handleKeypress);
-	glClearColor(0.94, 0.91, 0.87, 0);
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glLoadIdentity();
+
+	gluLookAt(
+		0.0f, 0.0f, 3.0f,
+		0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f);
+
+	glRotatef(xrot, 1.0f, 0.0f, 0.0f);
+	glRotatef(yrot, 0.0f, 1.0f, 0.0f);
+
+	drawBox();
+
+	glFlush();
+	glutSwapBuffers();
+}
+
+void resize(int w, int h)
+{
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	//glOrtho(0.0,10.0,0.0,10.0,-1.0,1.0);
-	glutReshapeFunc(reshape);
-	//glOrtho(0.0, 30.0, 0.0, 20.0, -1.0, 1.0);
-	glOrtho(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT, -1.0, 1.0);
-	//glOrtho(0.0f, glutGet(GLUT_SCREEN_WIDTH), glutGet(GLUT_SCREEN_HEIGHT), 0.0f, 0.0f, 1.0f);
-	glutDisplayFunc(display);
-	glutMainLoop();
 
+	glViewport(0, 0, w, h);
+
+	gluPerspective(grow_shrink, resize_f * w / h, resize_f, 100 * resize_f);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+}
+
+void idle(void)
+{
+	if (!mouseDown)
+	{
+		xrot += 0.3f;
+		yrot += 0.4f;
+	}
+
+	glutPostRedisplay();
+}
+
+
+void mySpecialFunction(int key, int x, int y)
+{
+	cout << "U -----------> rotate clockwise\n";
+	cout << "W or w ------> Up\n";
+	cout << "S or s -----> Down\n";
+	cout << "D or d ------> Right\n";
+	cout << "A or a ------> Left\n";
+	cout << "Z or z ------> Shrink\n";
+	cout << "X or x ------> Grow\n";
+	cout << "Z or z ------> Shrink\n";
+	cout << "Escape Key ---> exit the program\n\n";
+
+}
+
+void keyboard(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+	case 27:
+		exit(1);
+		break;
+
+
+
+	case 'w':
+	case 'W':
+		tra_x += 0.1f;
+		break;
+	case 's':
+	case 'S':
+		tra_x -= 0.1f;
+		break;
+	case 'a':
+	case 'A':
+		tra_z -= 0.1f;
+		break;
+	case 'd':
+	case 'D':
+		tra_z += 0.1f;
+		break;
+	case 'u':
+	case 'U':
+		xrot += 1.0f;
+		yrot += 1.0f;
+		xdiff += 1.0f;
+		ydiff += 1.0f;
+		break;
+
+	case 'y':
+	case 'Y':
+		xrot -= 1.0f;
+		yrot -= 1.0f;
+		xdiff += 1.0f;
+		ydiff += 1.0f;
+		break;
+
+	case 'h':
+	case 'H':
+		mySpecialFunction(key, x, y);
+		break;
+	case 'Z':
+	case 'z':
+		grow_shrink--;
+		resize(500, 500);
+
+		break;
+	case 'X':
+	case 'x':
+		grow_shrink++;
+		resize(500, 500);
+
+		break;
+
+	}
+
+
+	glutPostRedisplay();
+}
+
+void specialKeyboard(int key, int x, int y)
+{
+	if (key == GLUT_KEY_F1)
+	{
+		fullscreen = !fullscreen;
+
+		if (fullscreen)
+			glutFullScreen();
+		else
+		{
+			glutReshapeWindow(500, 500);
+			glutPositionWindow(50, 50);
+		}
+	}
+}
+
+void mouse(int button, int state, int x, int y)
+{
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	{
+		mouseDown = 1;
+
+		xdiff = x - yrot;
+		ydiff = -y + xrot;
+	}
+	else
+		mouseDown = 0;
+}
+
+void mouseMotion(int x, int y)
+{
+	if (mouseDown)
+	{
+		yrot = x - xdiff;
+		xrot = y + ydiff;
+
+		glutPostRedisplay();
+	}
+}
+
+int main(int argc, char* argv[])
+{
+	setRings();
+	glutInit(&argc, argv);
+
+	glutInitWindowPosition(50, 50);
+	glutInitWindowSize(500, 500);
+
+	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
+
+	glutCreateWindow("GLUT 3D -> Camera / 3D Transformation ");
+
+	glutDisplayFunc(display);
+	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(specialKeyboard);
+	glutMouseFunc(mouse);
+	glutMotionFunc(mouseMotion);
+	glutReshapeFunc(resize);
+	//glutIdleFunc(idle);
+
+	if (!init())
+		return 1;
+
+	glutMainLoop();
 
 	return 0;
 }
-
